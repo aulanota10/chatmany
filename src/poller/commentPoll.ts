@@ -4,7 +4,7 @@
 
 import { getActiveCampaigns, countEventsGlobal, kvGet, kvSet, now } from "../db";
 import type { Runtime } from "../runtime";
-import { toUnixSeconds } from "../runtime";
+import { isOwnComment, toUnixSeconds } from "../runtime";
 import type { NormalizedComment } from "../types";
 
 // Private replies cap ~750/hr; DMs ~200/hr. Openings are private replies that open a DM, so we
@@ -49,6 +49,7 @@ export async function pollComments(rt: Runtime, db: D1Database): Promise<void> {
         );
         continue;
       }
+      if (isOwnComment(rt, igsid, c.from?.username ?? c.username)) continue; // our own replies
       const evt: NormalizedComment = {
         kind: "comment",
         comment_id: c.id,

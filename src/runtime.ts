@@ -61,6 +61,20 @@ export function pollIntervalSeconds(env: Env): number | null {
   return Number.isFinite(n) && n > 0 ? Math.max(MIN_POLL_SECONDS, n) : DEFAULT_RECONCILE_SECONDS;
 }
 
+/**
+ * True when a comment was written by the connected account itself (our public replies). Compares
+ * the id and, as a fallback for id-type mismatches between endpoints, the username.
+ */
+export function isOwnComment(
+  rt: Pick<Runtime, "igUserId"> & { auth?: Pick<AuthRow, "username"> | null },
+  fromId: string | undefined,
+  fromUsername: string | undefined,
+): boolean {
+  if (fromId && fromId === rt.igUserId) return true;
+  const own = rt.auth?.username?.toLowerCase();
+  return !!own && !!fromUsername && fromUsername.toLowerCase() === own;
+}
+
 /** Parse an ISO-8601 timestamp (Graph `created_time`/`timestamp`) to unix seconds. */
 export function toUnixSeconds(iso: string | undefined): number {
   if (!iso) return now();

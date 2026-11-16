@@ -117,6 +117,11 @@ function inReplyOrder(convos: ConversationRow[]): ConversationRow[] {
   );
 }
 
+function isOwnReplyText(text: string, campaign: Campaign): boolean {
+  const t = text.trim();
+  return !!t && (campaign.public_reply?.texts ?? []).some((r) => r.trim() === t);
+}
+
 /** Deterministic rotation through public-reply variants so it looks human. */
 function pickRotating(texts: string[], seed: string): string {
   let h = 0;
@@ -149,6 +154,9 @@ export class Engine {
     let pendingRetry = false;
 
     for (const campaign of campaigns) {
+      // Second guard against reply loops: a comment that is exactly one of this campaign's own
+      // public-reply texts is our reply echoing back, whatever account id it arrived with.
+      if (isOwnReplyText(evt.text, campaign)) continue;
       if (!commentTriggers(evt.text, campaign.keywords, campaign.exclude)) continue;
       matchedCampaignId = campaign.campaign_id;
 

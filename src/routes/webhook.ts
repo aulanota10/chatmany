@@ -13,7 +13,7 @@
 // (mandatory) then normalizes comment/message events into the same transport-agnostic engine.
 
 import { WEBHOOK_FIELDS } from "../api/client";
-import { buildRuntime, toUnixSeconds } from "../runtime";
+import { buildRuntime, isOwnComment, toUnixSeconds } from "../runtime";
 import type { Env, NormalizedComment, NormalizedMessage } from "../types";
 import { json } from "./http";
 
@@ -135,6 +135,10 @@ export async function handleWebhookEvent(env: Env, req: Request): Promise<Respon
       const igsid = v.from?.id;
       const mediaId = v.media?.id;
       if (!igsid || !mediaId || !v.id) continue;
+      // Our own public replies come back as comment events too. One that contains the campaign
+      // keyword (e.g. "Tabela do TEMPO enviada") used to trigger another public reply in the same
+      // thread, and so on until a variant without the keyword came up. Never react to ourselves.
+      if (isOwnComment(rt, igsid, v.from?.username)) continue;
       const evt: NormalizedComment = {
         kind: "comment",
         comment_id: v.id,
